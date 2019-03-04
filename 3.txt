@@ -1,0 +1,38 @@
+3 - モデルをデプロイして API にしてみよう
+作成した Model を Deploy してみよう
+左のサイドメニュー内の Model から Deployment を選択し、Deployments 画面を開きます。
+ここでは、 Deploy されたモデルの一覧が表示されます。
+
+3-1
+
+Deployments 画面 右上にある [ +Create Deployment ] ボタンをクリックして Deployment を作ってみましょう。 入力値は以下の表に沿って入力して下さい。
+
+入力項目	入力値	説明
+Display Name	覚えられる好きな名前を	Delopyment の名前
+Model	先ほど作成したモデルの名前	アップロードした推論モデルの名前
+Environments	*今回は必要ありません	環境変数の設定
+3-2
+
+入力完了後に 画面右下の [ Create Deployment ] ボタンをクリックすることで Deployment が作成されます。
+作成が成功すると Deployments 画面に戻り、先ほど作成した Deployment がリストに追加されているのが確認できます。
+
+3-3
+
+作成した Deployment の Name をクリックすると、 Deployment Detail 画面へ遷移します。
+この画面では、登録した Model を利用して、 WebAPI や Batch などを作成することができます。
+
+3-4
+
+今回は WebAPI を作成するので、 Deployment Detail 画面右上の [ +Create HTTP Service ] ボタンをクリックします。 Create HTTP Service 画面では以下のように指定してください。
+
+入力項目	入力値	説明
+Version	1.0.0	Delopyment の version
+Instance Type	cpu-1	Deployment のインスタンスの種類
+Instance Number	1	インスタンスの数
+3-5
+
+入力が完了したら、画面右下の [ +Create HTTP Service ] ボタンをクリックしてください。 すると、先ほどの Development Detail 画面に、作成した HTTP Service が表示されます。
+
+3-6
+
+これで、先ほどアップロードした推論モデルを元に API Service が作成されました。

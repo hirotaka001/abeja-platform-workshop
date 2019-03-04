@@ -1,0 +1,108 @@
+6 - Optional:ABEJA Platform 向けに作成しよう
+このモデルを ABEJA Platform の形式、すなわち handler を用いた形式に書き換えてみましょう。
+ABEJA Platform の推論モデルでは、リクエストを受けるたびに handler 関数が実行されるため、 Deep Learning のモデルはグローバルの部分に置いた方が良いでしょう。 また、画像は numpy.ndarray 型で入力され、出力を JSON 形式とします。
+結果として、先ほどのコードを少し修正して下記のようにし、ファイル名を main.py とします。
+
+   import numpy as np
+   import chainer
+   from chainercv.datasets import voc_bbox_label_names
+   from chainercv.links import SSD300
+
+   pretrained_model = 'ssd300_voc0712_converted_2017_06_06.npz'
+   model = SSD300(
+       n_fg_class=len(voc_bbox_label_names),
+       pretrained_model=pretrained_model)
+
+   def handler(_itr, ctx):
+       for img in _itr:
+          img = img.transpose(2, 0, 1)
+          bboxes, labels, scores = model.predict([img])
+          bbox, label, score = bboxes[0], labels[0], scores[0]
+
+          result = []
+          for b, lbl, s in zip(bbox, label, score):
+              r = {'box': b.tolist(),
+                   'label': voc_bbox_label_names[lbl],
+                   'score': float(s)}
+              result.append(r)
+          yield result
+また、requirements.txt は以下のようにします。
+
+ pillow==4.2.1
+ numpy==1.14.2
+ chainer==4.5.0
+ chainercv==0.10.0
+最後に、main.py、requirements.txt、ssd300_voc0712_converted_2017_06_06.npz を zip に纏めてアップロードしましょう。
+
+$ zip inference_src.zip main.py requirements.txt ssd300_voc0712_converted_2017_06_06.npz
+管理画面にログインします
+ABEJA Platform 管理画面(以降コンソールと表記します)にログインします。
+コンソールにログインするためには ABEJA Platform アカウントが必要です。 今回のワークショップでは、事前にお渡ししたアカウント情報を使用してください。
+
+
+ABEJA Platform のログイン画面が表示されるので、認証情報を入力して [ Login ] ボタンをクリックします。
+
+ABEJA Platform 上にモデルを作成してみよう
+ログインしたら、左のサイドメニューから [ Model ] を選択し Models 画面を開いてください。
+
+2-1
+
+Models 画面右上の [ +Create Model ] をクリックして ABEJA Platform に推論モデルを登録します。 以下の Create Model 画面の上半分には任意の管理しやすい推論モデルの名前(Name)、説明(Description), バージョン(Version)をつける事が可能です。今回は分かりやすいように以下の名前にしてみましょう。
+
+入力項目	入力値	説明
+Name	覚えられる好きな名前	推論モデルの名前
+Description	SIX2019 workshop	推論モデルの説明
+Version	1.0.0	推論モデルのバージョン
+Version を付ける事で、元となる学習データや、パラメータを変更して作ったモデルのバージョン管理が可能になります。
+
+2-2
+
+[ Deploy after creating ] のチェックボックスは、チェックを外しておいてください。この項目にチェックをしておくことで、後述の Deployment の作成を省略できますが、今回はあえて Deployment も明示的に作成します。
+Create Model 画面下部にある [ Template ] と [ Upload ] のタブは Upload をお選びください。 タブ内の各項目には、以下の入力値を設定してください。
+
+入力項目	入力値	説明
+Runtime	abeja-inc/all-cpu:18.10	ランタイムの種類
+Handler	main:handler	handler関数
+今回は ABEJA Platform 上では学習は行っていないので、 [ TRAINING ARTIFACT ] の設定は必要ありません。 [ SOURCE CODE ] には最初にダウンロードした圧縮ファイルを追加してください。
+
+2-3 2-4
+
+最後に画面右下の [ Create Model ] ボタンをクリックすることで、 ABEJA Platform 上に モデルが登録されます。 登録された Model は最初の Models 画面で確認することが可能です。
+
+作成した Model を Deploy してみよう
+左のサイドメニュー内の Model から Deployment を選択し、Deployments 画面を開きます。
+ここでは、 Deploy されたモデルの一覧が表示されます。
+
+3-1
+
+Deployments 画面 右上にある [ +Create Deployment ] ボタンをクリックして Deployment を作ってみましょう。 入力値は以下の表に沿って入力して下さい。
+
+入力項目	入力値	説明
+Display Name	覚えられる好きな名前を	Delopyment の名前
+Model	先ほど作成したモデルの名前	アップロードした推論モデルの名前
+Environments	*今回は必要ありません	環境変数の設定
+3-2
+
+入力完了後に 画面右下の [ Create Deployment ] ボタンをクリックすることで Deployment が作成されます。
+作成が成功すると Deployments 画面に戻り、先ほど作成した Deployment がリストに追加されているのが確認できます。
+
+3-3
+
+作成した Deployment の Name をクリックすると、 Deployment Detail 画面へ遷移します。
+この画面では、登録した Model を利用して、 WebAPI や Batch などを作成することができます。
+
+3-4
+
+今回は WebAPI を作成するので、 Deployment Detail 画面右上の [ +Create HTTP Service ] ボタンをクリックします。 Create HTTP Service 画面では以下のように指定してください。
+
+入力項目	入力値	説明
+Version	1.0.0	Delopyment の version
+Instance Type	cpu-1	Deployment のインスタンスの種類
+Instance Number	1	インスタンスの数
+3-5
+
+入力が完了したら、画面右下の [ +Create HTTP Service ] ボタンをクリックしてください。 すると、先ほどの Development Detail 画面に、作成した HTTP Service が表示されます。
+
+3-6
+
+これで、先ほどアップロードした推論モデルを元に API Service が作成されました。

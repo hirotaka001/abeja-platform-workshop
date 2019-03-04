@@ -1,0 +1,56 @@
+5 - Optional:GitHub モデルで試してみよう
+多くのケースに於いて、論文で発表された新しいネットワークモデル等は、 GitHub などで公開されています。 論文を読みつつゼロからそれらを実装するよりも、公開されているモデルを使って迅速に試したい場合があると思います。
+本項では、そのような GitHub のモデルを ABEJA Platform にアップロードして試すまでを説明します。 こちらは、基本的には工程 1 〜 3 に加え、Python の知識とご自分の PC に以下の環境が必要です。
+
+必要な環境
+このワークショップを行うためには、以下が必要になります
+
+Python の実行環境
+Python のパッケージ管理システム pip
+GitHub のコードをダウンロードして編集する
+pipで入れることができれば、どのようなフレームワーク、どのような処理でも良いのですが、ここでは Chainer の Object Detection で試してみましょう。
+Chainer は Preferred Networks 社が開発した Deep Learning フレームワークです。周辺モジュールとして、 ChainerCV というコンピュータビジョンのためのライブラリや、化学・生物分野のライブラリがあり、様々なモデルを直ぐに試せます。
+ここでは、 ChainerCV の example にある ssd をダウンロードします。
+
+まずは、 ChainerCV に必要な各種モジュールをインストールしましょう。
+
+$ pip install chainer chainercv
+以下のリンクから ChainerCV の GitHub にある ssd サンプルをダウンロードしましょう。
+
+
+
+さて、ここから demo.py を編集して行きましょう。
+推論に必要な部分を切り出していきます。
+
+以下のように変更してみましょう。
+パラメータとして入力していた pretrained_model を直接書き、args.gpu のように使わない部分を削ぎ落とします。 また、モデルの出力は画像にせず、数値のまま（bboxes, labels, scores）で直接画面に表示してみましょう。 なお、 numpy 形式ですと後々 JSON に変換する際にエラーになるので、このタイミングで list 形式にしておきます。
+
+from PIL import Image
+import numpy as np
+import chainer
+from chainercv.datasets import voc_bbox_label_names
+from chainercv.links import SSD300
+
+def main():
+    pretrained_model = 'ssd300_voc0712_converted_2017_06_06.npz'
+    model = SSD300(
+        n_fg_class=len(voc_bbox_label_names),
+        pretrained_model=pretrained_model)
+
+    img = np.array(Image.open('cat.jpg'))
+    img = img.transpose(2, 0, 1)
+    bboxes, labels, scores = model.predict([img])
+    bbox, label, score = bboxes[0], labels[0], scores[0]
+
+    result = []
+    for b, lbl, s in zip(bbox, label, score):
+        r = {'box': b.tolist(),
+             'label': voc_bbox_label_names[lbl],
+             'score': float(s)}
+        result.append(r)
+    print(result)
+
+if __name__ == '__main__':
+    main()
+これを実行すると、画像を入力として、推論結果が JSON に変換できる list 形式で得られることを確認できると思います。
+次は、demo.py を ABEJA Platform で使えるように書き換えましょう。
